@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Announcements — Jeman Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="brandmark">Jeman Admin</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="products.html">Products</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="announcements.html" class="active">Announcements</a>
+    </nav>
+    <hr class="divider">
+    <nav><a href="#" id="logoutLink">Sign out</a><a href="../index.html">View storefront ↗</a></nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar"><h1 style="font-size:26px;">Announcements</h1></div>
+    <p style="color:var(--muted);font-size:14px;max-width:60ch;">
+      Post discounts, offers, and new-arrival notices here. This feeds the storefront's announcement bar and,
+      in a full build, WhatsApp/SMS notifications to opted-in customers.
+    </p>
+
+    <form id="aForm" class="admin-panel" style="max-width:520px;">
+      <div class="form-row"><label for="aType">Type</label>
+        <select id="aType"><option value="discount">Discount</option><option value="new">New arrival</option><option value="offer">Offer</option></select></div>
+      <div class="form-row"><label for="aText">Message</label><input id="aText" placeholder="20% off all knitwear this weekend" required></div>
+      <button class="btn btn-primary" type="submit">Post announcement</button>
+    </form>
+
+    <div class="admin-panel">
+      <h2 style="font-size:18px;font-family:var(--body);font-weight:600;margin-bottom:14px;">Live announcements</h2>
+      <div id="list"></div>
+      <p id="empty" style="color:var(--muted);font-size:14px;display:none;">Nothing posted yet.</p>
+    </div>
+  </main>
+</div>
+
+<script src="../js/store.js"></script>
+<script src="guard.js"></script>
+<script>
+function readAnn(){ try { return JSON.parse(localStorage.getItem('jeman_announcements')||'[]'); } catch(e){ return []; } }
+function writeAnn(list){ localStorage.setItem('jeman_announcements', JSON.stringify(list)); }
+
+function render(){
+  const list = readAnn();
+  document.getElementById('list').innerHTML = list.map((a,i) => `
+    <div class="order-row">
+      <div><span class="status status-paid">${a.type}</span> <span style="margin-left:8px;">${a.text}</span></div>
+      <button class="link-btn" data-del="${i}">Remove</button>
+    </div>`).join('');
+  document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+    const l = readAnn(); l.splice(Number(b.dataset.del), 1); writeAnn(l); render();
+  });
+}
+document.getElementById('aForm').onsubmit = e => {
+  e.preventDefault();
+  const list = readAnn();
+  list.unshift({ type: document.getElementById('aType').value, text: document.getElementById('aText').value.trim(), at: new Date().toISOString() });
+  writeAnn(list);
+  e.target.reset();
+  render();
+};
+render();
+</script>
+</body>
+</html>

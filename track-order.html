@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track your order — Jeman Collections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+</head>
+<body>
+
+<div class="subnav"><div class="wrap">
+  <a href="index.html">← Back to shop</a>
+  <span class="brandmark">Jeman Collections</span>
+  <a href="account.html">Your account</a>
+</div></div>
+
+<div class="wrap-narrow" style="padding-top:40px;padding-bottom:80px;">
+  <div class="eyebrow">Order status</div>
+  <h1 style="font-size:34px;">Track your order</h1>
+  <p style="color:var(--muted);">Enter your order reference (e.g. JM12345678) and the phone number used at checkout.</p>
+
+  <form id="trackForm" class="card" style="padding:24px;max-width:440px;">
+    <div class="form-row"><label for="ref">Order reference</label><input id="ref" placeholder="JM12345678" required></div>
+    <div class="form-row"><label for="phone">Phone number</label><input id="phone" placeholder="0722 000 000" required></div>
+    <button class="btn btn-primary btn-block" type="submit">Track order</button>
+    <div id="trackError" class="form-error"></div>
+  </form>
+
+  <div id="result" style="margin-top:32px;"></div>
+</div>
+
+<script src="js/store.js"></script>
+<script>
+const { Orders, money } = JemanStore;
+const STAGES = ['pending','payment_sent','paid','processing','shipped','delivered'];
+const LABELS = { pending:'Order placed', payment_sent:'Payment sent', paid:'Paid', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' };
+
+document.getElementById('trackForm').onsubmit = e => {
+  e.preventDefault();
+  const ref = document.getElementById('ref').value.trim().toUpperCase();
+  const phone = document.getElementById('phone').value.trim();
+  const order = Orders.all().find(o => o.ref.toUpperCase() === ref && o.phone === phone);
+  const err = document.getElementById('trackError');
+  const result = document.getElementById('result');
+  if (!order) {
+    err.textContent = "We couldn't find an order matching that reference and phone number.";
+    result.innerHTML = '';
+    return;
+  }
+  err.textContent = '';
+  const cancelled = order.status === 'cancelled';
+  const currentIdx = STAGES.indexOf(order.status);
+  result.innerHTML = `
+    <div class="card" style="padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div><b style="font-size:18px;">${order.ref}</b><div style="font-size:12px;color:var(--muted);">${new Date(order.createdAt).toLocaleString()}</div></div>
+        <span class="status status-${order.status}">${LABELS[order.status]}</span>
+      </div>
+      ${cancelled ? '<p style="color:var(--bad);font-size:14px;">This order was cancelled — items were released back to stock. Contact us if this is unexpected.</p>' :
+        `<div style="display:flex;gap:4px;margin-bottom:20px;">
+          ${STAGES.map((s,i) => `<div style="flex:1;height:6px;border-radius:4px;background:${i<=currentIdx?'var(--brass)':'var(--rule)'}"></div>`).join('')}
+        </div>`}
+      <p style="font-size:13px;color:var(--muted);">${order.items.length} item(s) · Total ${money(order.total)}</p>
+    </div>`;
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin sign in — Jeman Collections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;}</style>
+</head>
+<body>
+<div class="card" style="padding:36px;max-width:380px;width:100%;">
+  <div class="eyebrow">Jeman Admin</div>
+  <h1 style="font-size:28px;">Sign in</h1>
+  <p style="color:var(--muted);font-size:14px;">Demo gate only — replace with real authentication before going live.</p>
+  <form id="f">
+    <div class="form-row"><label for="pw">Admin password</label><input id="pw" type="password" placeholder="jeman-admin" required></div>
+    <div id="err" class="form-error"></div>
+    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+  </form>
+</div>
+<script>
+document.getElementById('f').onsubmit = e => {
+  e.preventDefault();
+  if (document.getElementById('pw').value === 'jeman-admin') {
+    sessionStorage.setItem('jeman_admin_session', '1');
+    location.href = 'index.html';
+  } else {
+    document.getElementById('err').textContent = 'Incorrect password. Try "jeman-admin" (demo default).';
+  }
+};
+</script>
+</body>
+</html>

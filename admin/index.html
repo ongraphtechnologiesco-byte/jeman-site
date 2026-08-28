@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Jeman Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="brandmark">Jeman Admin</div>
+    <nav>
+      <a href="index.html" class="active">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="products.html">Products</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="announcements.html">Announcements</a>
+    </nav>
+    <hr class="divider">
+    <nav><a href="#" id="logoutLink">Sign out</a><a href="../index.html">View storefront ↗</a></nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 style="font-size:26px;">Dashboard</h1>
+    </div>
+
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="label">Pending payment</div><div class="value" id="statPending">0</div></div>
+      <div class="card stat-card"><div class="label">Awaiting confirmation</div><div class="value" id="statSent">0</div></div>
+      <div class="card stat-card"><div class="label">Revenue (paid)</div><div class="value" id="statRevenue">KES 0</div></div>
+      <div class="card stat-card"><div class="label">Low stock (≤2)</div><div class="value" id="statLow">0</div></div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="admin-topbar" style="margin-bottom:14px;">
+        <h2 style="font-size:18px;font-family:var(--body);font-weight:600;">Orders needing action</h2>
+        <a href="orders.html" class="link-btn">View all orders →</a>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Order</th><th>Customer phone</th><th>Total</th><th>Status</th><th>Reserved until</th><th></th></tr></thead>
+        <tbody id="actionRows"></tbody>
+      </table>
+      <p id="noAction" style="color:var(--muted);font-size:14px;padding:16px 0;display:none;">Nothing needs your attention right now.</p>
+    </div>
+  </main>
+</div>
+
+<script src="../js/store.js"></script>
+<script src="guard.js"></script>
+<script>
+const { Orders, Products, money } = JemanStore;
+
+function refresh(){
+  const orders = Orders.all();
+  const pending = orders.filter(o => o.status === 'pending');
+  const sent = orders.filter(o => o.status === 'payment_sent');
+  const revenue = orders.filter(o => ['paid','processing','shipped','delivered'].includes(o.status)).reduce((s,o)=>s+o.total,0);
+  const lowStock = Products.all().flatMap(p => p.variants).filter(v => v.stock <= 2).length;
+
+  document.getElementById('statPending').textContent = pending.length;
+  document.getElementById('statSent').textContent = sent.length;
+  document.getElementById('statRevenue').textContent = money(revenue);
+  document.getElementById('statLow').textContent = lowStock;
+
+  const actionable = [...pending, ...sent].sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+  document.getElementById('actionRows').innerHTML = actionable.map(o => `
+    <tr>
+      <td><b>${o.ref}</b></td>
+      <td>${o.phone||'—'}</td>
+      <td>${money(o.total)}</td>
+      <td><span class="status status-${o.status}">${o.status.replace('_',' ')}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${new Date(o.reserveUntil).toLocaleString()}</td>
+      <td>${o.status==='pending'
+        ? `<button class="btn btn-sm btn-brass" data-stk="${o.id}">Send STK push</button>`
+        : `<button class="btn btn-sm btn-ghost" data-paid="${o.id}">Mark paid (demo)</button>`}</td>
+    </tr>`).join('');
+  document.getElementById('noAction').style.display = actionable.length ? 'none' : 'block';
+
+  document.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { Orders.sendSTKPush(b.dataset.stk); refresh(); });
+  document.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => { Orders.simulateIPNSuccess(b.dataset.paid); refresh(); });
+}
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Products — Jeman Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="brandmark">Jeman Admin</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="products.html" class="active">Products</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="announcements.html">Announcements</a>
+    </nav>
+    <hr class="divider">
+    <nav><a href="#" id="logoutLink">Sign out</a><a href="../index.html">View storefront ↗</a></nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 style="font-size:26px;">Products</h1>
+      <button class="btn btn-primary" id="addBtn">+ Add product</button>
+    </div>
+    <div class="admin-panel" style="padding:0;">
+      <table class="data-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Sizes / stock</th><th>Tags</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal" style="display:none;">
+  <div class="modal-box">
+    <h3 id="modalTitle" style="font-size:20px;">Add product</h3>
+    <form id="pForm">
+      <input type="hidden" id="pId">
+      <div class="two-col">
+        <div class="form-row"><label for="pName">Name</label><input id="pName" required></div>
+        <div class="form-row"><label for="pPrice">Price (KES)</label><input id="pPrice" type="number" required></div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><label for="pCategory">Category</label>
+          <select id="pCategory"><option value="shirts">Shirts</option><option value="trousers">Trousers</option><option value="knitwear">Knitwear</option><option value="caps">Caps</option></select></div>
+        <div class="form-row"><label for="pFit">Fit</label><input id="pFit" placeholder="Slim / Regular / Relaxed"></div>
+      </div>
+      <div class="form-row"><label for="pVariants">Sizes &amp; stock (e.g. S:4, M:9, L:6)</label><input id="pVariants" placeholder="S:4, M:9, L:6" required></div>
+      <div class="form-row"><label for="pTags">Tags (comma separated: new, sale)</label><input id="pTags" placeholder="new"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Save product</button>
+        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../js/store.js"></script>
+<script src="guard.js"></script>
+<script>
+const { Products, money } = JemanStore;
+
+function renderRows(){
+  document.getElementById('rows').innerHTML = Products.all().map(p => `
+    <tr>
+      <td><b>${p.name}</b></td>
+      <td style="text-transform:capitalize;">${p.category}</td>
+      <td>${money(p.price)}</td>
+      <td style="font-family:var(--mono);font-size:12px;">${p.variants.map(v=>v.size+':'+v.stock).join(', ')}</td>
+      <td>${p.tags.map(t=>`<span class="status status-paid">${t}</span>`).join(' ')}</td>
+      <td><button class="btn btn-sm btn-ghost" data-edit="${p.id}">Edit</button> <button class="btn btn-sm btn-ghost" data-del="${p.id}">Delete</button></td>
+    </tr>`).join('');
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openModal(Products.get(b.dataset.edit)));
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Delete this product?')) { Products.remove(b.dataset.del); renderRows(); } });
+}
+
+function openModal(p){
+  document.getElementById('modalTitle').textContent = p ? 'Edit product' : 'Add product';
+  document.getElementById('pId').value = p ? p.id : '';
+  document.getElementById('pName').value = p ? p.name : '';
+  document.getElementById('pPrice').value = p ? p.price : '';
+  document.getElementById('pCategory').value = p ? p.category : 'shirts';
+  document.getElementById('pFit').value = p ? p.fit : '';
+  document.getElementById('pVariants').value = p ? p.variants.map(v=>v.size+':'+v.stock).join(', ') : '';
+  document.getElementById('pTags').value = p ? p.tags.join(', ') : '';
+  document.getElementById('modal').style.display = 'flex';
+}
+document.getElementById('addBtn').onclick = () => openModal(null);
+document.getElementById('cancelBtn').onclick = () => document.getElementById('modal').style.display = 'none';
+
+document.getElementById('pForm').onsubmit = e => {
+  e.preventDefault();
+  const variants = document.getElementById('pVariants').value.split(',').map(s => {
+    const [size, stock] = s.split(':').map(x => x.trim());
+    return { size, stock: Number(stock) || 0 };
+  }).filter(v => v.size);
+  const id = document.getElementById('pId').value;
+  Products.save({
+    id: id || undefined,
+    name: document.getElementById('pName').value.trim(),
+    price: Number(document.getElementById('pPrice').value),
+    category: document.getElementById('pCategory').value,
+    fit: document.getElementById('pFit').value.trim(),
+    sub: '', occasions: [],
+    variants,
+    tags: document.getElementById('pTags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    compareAt: null
+  });
+  document.getElementById('modal').style.display = 'none';
+  renderRows();
+};
+renderRows();
+</script>
+</body>
+</html>

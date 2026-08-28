@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your account — Jeman Collections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+</head>
+<body>
+
+<div class="subnav"><div class="wrap">
+  <a href="index.html">← Back to shop</a>
+  <span class="brandmark">Jeman Collections</span>
+  <a href="track-order.html">Track an order</a>
+</div></div>
+
+<div class="wrap-narrow" style="padding-top:40px;padding-bottom:80px;">
+
+<div id="authView">
+  <div class="eyebrow">Account</div>
+  <h1 style="font-size:34px;">Sign in or create an account</h1>
+  <p style="color:var(--muted);max-width:44ch;">Save your details, track orders, and earn points on everything you buy at Shop 22.</p>
+
+  <div class="tabs" style="max-width:400px;">
+    <button id="tabLogin" class="active">Sign in</button>
+    <button id="tabSignup">Create account</button>
+  </div>
+
+  <form id="loginForm" class="card" style="padding:28px;max-width:400px;">
+    <div class="form-row"><label for="lPhone">Phone number</label><input id="lPhone" placeholder="0722 000 000" required></div>
+    <div class="form-row"><label for="lPass">Password</label><input id="lPass" type="password" required></div>
+    <div id="loginError" class="form-error"></div>
+    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+  </form>
+
+  <form id="signupForm" class="card" style="padding:28px;max-width:400px;display:none;">
+    <div class="form-row"><label for="sName">Full name</label><input id="sName" required></div>
+    <div class="form-row"><label for="sPhone">Phone number</label><input id="sPhone" placeholder="0722 000 000" required></div>
+    <div class="form-row"><label for="sEmail">Email (optional)</label><input id="sEmail" type="email"></div>
+    <div class="form-row"><label for="sPass">Password</label><input id="sPass" type="password" required></div>
+    <div id="signupError" class="form-error"></div>
+    <button class="btn btn-brass btn-block" type="submit">Create account</button>
+  </form>
+</div>
+
+<div id="dashView" style="display:none;">
+  <div class="eyebrow">Account</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+    <h1 id="hello" style="font-size:34px;"></h1>
+    <button class="link-btn" id="logoutBtn">Sign out</button>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="points" class="active">Points &amp; vouchers</button>
+    <button data-tab="orders">Order history</button>
+    <button data-tab="gift">Send a gift voucher</button>
+  </div>
+
+  <div id="panePoints">
+    <div class="points-card">
+      <div><div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.8;font-family:var(--mono);">Your points</div>
+        <div class="num" id="ptsNum">0</div></div>
+      <div style="font-size:13px;max-width:26ch;opacity:.9;">Earn 1 point per KES 100 spent. Redeem 500 points for a KES 500 voucher.</div>
+      <button class="btn btn-brass btn-sm" id="redeemBtn">Redeem 500 pts</button>
+    </div>
+    <h3 style="font-size:18px;">Your vouchers</h3>
+    <div id="voucherList"></div>
+  </div>
+
+  <div id="paneOrders" style="display:none;"></div>
+
+  <div id="paneGift" style="display:none;">
+    <form id="giftForm" class="card" style="padding:24px;max-width:460px;">
+      <div class="eyebrow">Occasion</div>
+      <div class="occasion-row" id="occRow">
+        <button type="button" class="occasion-pill active" data-occ="birthday">Birthday</button>
+        <button type="button" class="occasion-pill" data-occ="fathers-day">Father's Day</button>
+        <button type="button" class="occasion-pill" data-occ="wedding">Wedding</button>
+        <button type="button" class="occasion-pill" data-occ="general">General</button>
+      </div>
+      <div class="form-row"><label for="gAmount">Voucher amount (KES)</label><input id="gAmount" type="number" min="500" step="100" value="2000" required></div>
+      <div class="form-row"><label for="gName">Recipient's name</label><input id="gName" required></div>
+      <div class="form-row"><label for="gContact">Recipient's phone or email</label><input id="gContact" required></div>
+      <div class="form-row"><label for="gMsg">Personal message (optional)</label><textarea id="gMsg" rows="3"></textarea></div>
+      <button class="btn btn-brass btn-block" type="submit">Buy voucher</button>
+      <p class="form-hint">Demo checkout — no real payment is taken here. In production this triggers the same M-Pesa flow as a normal order.</p>
+    </form>
+  </div>
+</div>
+
+</div>
+
+<script src="js/store.js"></script>
+<script>
+const { Auth, Orders, Vouchers, money } = JemanStore;
+
+function renderAuthOrDash(){
+  const u = Auth.currentUser();
+  document.getElementById('authView').style.display = u ? 'none' : 'block';
+  document.getElementById('dashView').style.display = u ? 'block' : 'none';
+  if (u) renderDash(u);
+}
+
+document.getElementById('tabLogin').onclick = () => {
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabSignup').classList.remove('active');
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('signupForm').style.display = 'none';
+};
+document.getElementById('tabSignup').onclick = () => {
+  document.getElementById('tabSignup').classList.add('active');
+  document.getElementById('tabLogin').classList.remove('active');
+  document.getElementById('signupForm').style.display = 'block';
+  document.getElementById('loginForm').style.display = 'none';
+};
+
+document.getElementById('loginForm').onsubmit = e => {
+  e.preventDefault();
+  const r = Auth.login({ phone: document.getElementById('lPhone').value.trim(), password: document.getElementById('lPass').value });
+  document.getElementById('loginError').textContent = r.ok ? '' : r.error;
+  if (r.ok) renderAuthOrDash();
+};
+document.getElementById('signupForm').onsubmit = e => {
+  e.preventDefault();
+  const r = Auth.signup({
+    name: document.getElementById('sName').value.trim(),
+    phone: document.getElementById('sPhone').value.trim(),
+    email: document.getElementById('sEmail').value.trim(),
+    password: document.getElementById('sPass').value
+  });
+  document.getElementById('signupError').textContent = r.ok ? '' : r.error;
+  if (r.ok) renderAuthOrDash();
+};
+document.getElementById('logoutBtn').onclick = () => { Auth.logout(); renderAuthOrDash(); };
+
+document.querySelectorAll('.tabs button[data-tab]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['points','orders','gift'].forEach(t => document.getElementById('pane'+t[0].toUpperCase()+t.slice(1)).style.display = 'none');
+    document.getElementById('pane'+btn.dataset.tab[0].toUpperCase()+btn.dataset.tab.slice(1)).style.display = 'block';
+  };
+});
+
+document.querySelectorAll('.occasion-pill').forEach(p => {
+  p.onclick = () => { document.querySelectorAll('.occasion-pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); };
+});
+
+function renderDash(u){
+  document.getElementById('hello').textContent = 'Hi, ' + u.name.split(' ')[0];
+  document.getElementById('ptsNum').textContent = u.points || 0;
+  document.getElementById('redeemBtn').disabled = (u.points||0) < 500;
+
+  const vouchers = Vouchers.forUser(u.id);
+  const vlist = document.getElementById('voucherList');
+  vlist.innerHTML = vouchers.length ? vouchers.map(v => `
+    <div class="voucher-card">
+      <div><div class="voucher-code">${v.code}</div>
+        <div style="font-size:12px;color:var(--muted);">${money(v.amount)} · for ${v.recipientName||'—'} · ${v.status}</div></div>
+      <span class="status status-${v.status==='active'?'paid':'cancelled'}">${v.status}</span>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:14px;">No vouchers yet — buy one for someone under "Send a gift voucher."</p>';
+
+  const orders = Orders.forUser(u.id);
+  document.getElementById('paneOrders').innerHTML = orders.length ? orders.map(o => `
+    <div class="order-row">
+      <div><b>${o.ref}</b><div style="font-size:12px;color:var(--muted);">${new Date(o.createdAt).toLocaleDateString()} · ${o.items.length} item(s) · ${money(o.total)}</div></div>
+      <span class="status status-${o.status}">${o.status.replace('_',' ')}</span>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:14px;">No orders yet — this connects to real checkout once wired to the storefront cart.</p>';
+}
+
+document.getElementById('redeemBtn').onclick = () => {
+  const u = Auth.currentUser();
+  if (!u || (u.points||0) < 500) return;
+  Auth.updateUser(u.id, { points: u.points - 500 });
+  Vouchers.create({ type: 'points_redemption', amount: 500, buyerUserId: u.id, recipientName: u.name, recipientContact: u.phone });
+  renderDash(Auth.currentUser());
+};
+
+document.getElementById('giftForm').onsubmit = e => {
+  e.preventDefault();
+  const u = Auth.currentUser();
+  const occ = document.querySelector('.occasion-pill.active').dataset.occ;
+  const v = Vouchers.create({
+    type: 'gift', amount: Number(document.getElementById('gAmount').value), occasion: occ,
+    buyerUserId: u ? u.id : null,
+    recipientName: document.getElementById('gName').value.trim(),
+    recipientContact: document.getElementById('gContact').value.trim(),
+    message: document.getElementById('gMsg').value.trim()
+  });
+  alert('Voucher ' + v.code + ' created for ' + v.recipientName + '. In production this is delivered by SMS/WhatsApp/email automatically.');
+  e.target.reset();
+  if (u) renderDash(Auth.currentUser());
+};
+
+renderAuthOrDash();
+</script>
+</body>
+</html>

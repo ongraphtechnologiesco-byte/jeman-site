@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orders — Jeman Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="brandmark">Jeman Admin</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="orders.html" class="active">Orders</a>
+      <a href="products.html">Products</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="announcements.html">Announcements</a>
+    </nav>
+    <hr class="divider">
+    <nav><a href="#" id="logoutLink">Sign out</a><a href="../index.html">View storefront ↗</a></nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 style="font-size:26px;">Orders</h1>
+      <div class="pill-toggle" id="filterRow">
+        <button data-f="all" class="active">All</button>
+        <button data-f="pending">Pending</button>
+        <button data-f="payment_sent">Payment sent</button>
+        <button data-f="paid">Paid</button>
+        <button data-f="processing">Processing</button>
+        <button data-f="shipped">Shipped</button>
+        <button data-f="delivered">Delivered</button>
+        <button data-f="cancelled">Cancelled</button>
+      </div>
+    </div>
+    <div class="admin-panel" style="padding:0;">
+      <table class="data-table">
+        <thead><tr><th>Order</th><th>Phone</th><th>Items</th><th>Total</th><th>Status</th><th>Placed</th><th>Actions</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" style="color:var(--muted);font-size:14px;padding:24px;display:none;">No orders in this status yet.</p>
+    </div>
+  </main>
+</div>
+
+<script src="../js/store.js"></script>
+<script src="guard.js"></script>
+<script>
+const { Orders, money } = JemanStore;
+let filter = 'all';
+
+const NEXT = { paid: 'processing', processing: 'shipped', shipped: 'delivered' };
+
+function renderRows(){
+  let orders = Orders.all().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  if (filter !== 'all') orders = orders.filter(o => o.status === filter);
+  document.getElementById('rows').innerHTML = orders.map(o => `
+    <tr>
+      <td><b>${o.ref}</b></td>
+      <td>${o.phone||'—'}</td>
+      <td>${o.items.reduce((s,i)=>s+i.qty,0)}</td>
+      <td>${money(o.total)}</td>
+      <td><span class="status status-${o.status}">${o.status.replace('_',' ')}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${new Date(o.createdAt).toLocaleDateString()}</td>
+      <td>${actionsFor(o)}</td>
+    </tr>`).join('');
+  document.getElementById('empty').style.display = orders.length ? 'none' : 'block';
+  document.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    const [action, id] = [b.dataset.act, b.dataset.id];
+    if (action === 'stk') Orders.sendSTKPush(id);
+    else if (action === 'paid') Orders.simulateIPNSuccess(id);
+    else if (action === 'fail') Orders.simulateIPNFailure(id);
+    else Orders.updateStatus(id, action);
+    renderRows();
+  });
+}
+function actionsFor(o){
+  if (o.status === 'pending') return `<button class="btn btn-sm btn-brass" data-act="stk" data-id="${o.id}">Send STK</button>`;
+  if (o.status === 'payment_sent') return `<button class="btn btn-sm btn-ghost" data-act="paid" data-id="${o.id}">Mark paid</button> <button class="btn btn-sm btn-ghost" data-act="fail" data-id="${o.id}">Mark failed</button>`;
+  if (NEXT[o.status]) return `<button class="btn btn-sm btn-ghost" data-act="${NEXT[o.status]}" data-id="${o.id}">Mark ${NEXT[o.status]}</button>`;
+  return '<span style="color:var(--muted);font-size:12px;">—</span>';
+}
+
+document.querySelectorAll('#filterRow button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#filterRow button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); filter = b.dataset.f; renderRows();
+});
+renderRows();
+</script>
+</body>
+</html>

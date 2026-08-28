@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventory — Jeman Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="brandmark">Jeman Admin</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="orders.html">Orders</a>
+      <a href="products.html">Products</a>
+      <a href="inventory.html" class="active">Inventory</a>
+      <a href="announcements.html">Announcements</a>
+    </nav>
+    <hr class="divider">
+    <nav><a href="#" id="logoutLink">Sign out</a><a href="../index.html">View storefront ↗</a></nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar"><h1 style="font-size:26px;">Inventory</h1></div>
+    <p style="color:var(--muted);font-size:14px;max-width:60ch;">
+      "Reserved" is stock tied up by orders sitting at Pending or Payment sent — it protects against overselling
+      while you decide whether to approve a payment request. It releases automatically if the order expires or is cancelled.
+    </p>
+    <div class="admin-panel" style="padding:0;">
+      <table class="data-table">
+        <thead><tr><th>Product</th><th>Size</th><th>In stock</th><th>Reserved</th><th>Available</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="../js/store.js"></script>
+<script src="guard.js"></script>
+<script>
+const { Products } = JemanStore;
+const rows = [];
+Products.all().forEach(p => p.variants.forEach(v => {
+  const reserved = Products.reservedQty(p.id, v.size);
+  rows.push({ name: p.name, size: v.size, stock: v.stock, reserved, available: Math.max(0, v.stock - reserved) });
+}));
+document.getElementById('rows').innerHTML = rows.map(r => `
+  <tr>
+    <td>${r.name}</td>
+    <td>${r.size}</td>
+    <td>${r.stock}</td>
+    <td>${r.reserved}</td>
+    <td style="color:${r.available<=2?'var(--bad)':'inherit'};font-weight:${r.available<=2?600:400};">${r.available}</td>
+  </tr>`).join('');
+</script>
+</body>
+</html>
