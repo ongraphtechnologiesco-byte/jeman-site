@@ -31,27 +31,40 @@
   <div id="result" style="margin-top:32px;"></div>
 </div>
 
+<script src="js/config.js"></script>
 <script src="js/store.js"></script>
 <script>
 const { Orders, money } = JemanStore;
 const STAGES = ['pending','payment_sent','paid','processing','shipped','delivered'];
 const LABELS = { pending:'Order placed', payment_sent:'Payment sent', paid:'Paid', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' };
+let currentRef = null, currentPhone = null;
 
-document.getElementById('trackForm').onsubmit = e => {
+document.getElementById('trackForm').onsubmit = async e => {
   e.preventDefault();
   const ref = document.getElementById('ref').value.trim().toUpperCase();
   const phone = document.getElementById('phone').value.trim();
-  const order = Orders.all().find(o => o.ref.toUpperCase() === ref && o.phone === phone);
   const err = document.getElementById('trackError');
   const result = document.getElementById('result');
+
+  let order = null;
+  try {
+    if (window.JemanAPI && JemanAPI.live()) {
+      order = await JemanAPI.getOrder(ref, phone);
+    } else {
+      order = Orders.all().find(o => o.ref.toUpperCase() === ref && o.phone === phone);
+    }
+  } catch (e) { /* falls through to not-found below */ }
+
   if (!order) {
     err.textContent = "We couldn't find an order matching that reference and phone number.";
     result.innerHTML = '';
     return;
   }
   err.textContent = '';
+  currentRef = order.ref; currentPhone = phone;
   const cancelled = order.status === 'cancelled';
   const currentIdx = STAGES.indexOf(order.status);
+  const warn = order.expiringSoon ? `<p style="background:var(--tape);color:var(--brass);font-size:13px;padding:10px 14px;border-radius:var(--r);margin-top:14px;">This reservation expires soon (~${order.hoursRemaining}h left) — pay now to keep your items held.</p>` : '';
   result.innerHTML = `
     <div class="card" style="padding:24px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
@@ -63,8 +76,41 @@ document.getElementById('trackForm').onsubmit = e => {
           ${STAGES.map((s,i) => `<div style="flex:1;height:6px;border-radius:4px;background:${i<=currentIdx?'var(--brass)':'var(--rule)'}"></div>`).join('')}
         </div>`}
       <p style="font-size:13px;color:var(--muted);">${order.items.length} item(s) · Total ${money(order.total)}</p>
+      ${warn}
+    </div>
+    <div class="card" style="padding:24px;margin-top:16px;">
+      <h3 style="font-size:16px;">Message us about this order</h3>
+      <div id="msgThread" style="margin-bottom:14px;"></div>
+      <form id="msgForm" style="display:flex;gap:8px;">
+        <input id="msgText" placeholder="Ask a question about your order…" style="flex:1;padding:10px 12px;border:1px solid var(--rule);border-radius:var(--r);">
+        <button class="btn btn-sm btn-primary" type="submit">Send</button>
+      </form>
     </div>`;
+  renderMessages(order.messages || []);
+  document.getElementById('msgForm').onsubmit = sendMessage;
 };
+
+function renderMessages(messages) {
+  const el = document.getElementById('msgThread');
+  el.innerHTML = messages.length ? messages.map(m => `
+    <div style="text-align:${m.from==='admin'?'left':'right'};margin-bottom:8px;">
+      <span style="display:inline-block;max-width:80%;padding:8px 12px;border-radius:var(--r);font-size:13px;background:${m.from==='admin'?'var(--chalk)':'var(--indigo)'};color:${m.from==='admin'?'var(--ink)':'#fff'};">${m.text}</span>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:13px;">No messages yet.</p>';
+}
+
+async function sendMessage(e) {
+  e.preventDefault();
+  const text = document.getElementById('msgText').value.trim();
+  if (!text || !window.JemanAPI || !JemanAPI.live()) {
+    if (!JemanAPI || !JemanAPI.live()) alert('Messaging needs the live backend connected (set JEMAN_API_BASE_URL in js/config.js).');
+    return;
+  }
+  try {
+    const order = await JemanAPI.sendMessage(currentRef, 'customer', text);
+    renderMessages(order.messages || []);
+    document.getElementById('msgText').value = '';
+  } catch (err) { alert(err.message); }
+}
 </script>
 </body>
 </html>

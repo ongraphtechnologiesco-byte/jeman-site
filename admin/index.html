@@ -48,13 +48,17 @@
   </main>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/store.js"></script>
 <script src="guard.js"></script>
 <script>
 const { Orders, Products, money } = JemanStore;
+const live = window.JemanAPI && JemanAPI.live();
 
-function refresh(){
-  const orders = Orders.all();
+async function fetchOrders() { return live ? JemanAPI.listOrders() : Orders.all(); }
+
+async function refresh(){
+  const orders = await fetchOrders();
   const pending = orders.filter(o => o.status === 'pending');
   const sent = orders.filter(o => o.status === 'payment_sent');
   const revenue = orders.filter(o => ['paid','processing','shipped','delivered'].includes(o.status)).reduce((s,o)=>s+o.total,0);
@@ -67,19 +71,23 @@ function refresh(){
 
   const actionable = [...pending, ...sent].sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
   document.getElementById('actionRows').innerHTML = actionable.map(o => `
-    <tr>
-      <td><b>${o.ref}</b></td>
+    <tr style="${o.expiringSoon ? 'background:var(--tape);' : ''}">
+      <td><b>${o.ref}</b>${o.expiringSoon ? ` <span class="status status-payment_sent">⚠ ${o.hoursRemaining}h left</span>` : ''}</td>
       <td>${o.phone||'—'}</td>
       <td>${money(o.total)}</td>
       <td><span class="status status-${o.status}">${o.status.replace('_',' ')}</span></td>
       <td style="font-size:12px;color:var(--muted);">${new Date(o.reserveUntil).toLocaleString()}</td>
       <td>${o.status==='pending'
-        ? `<button class="btn btn-sm btn-brass" data-stk="${o.id}">Send STK push</button>`
-        : `<button class="btn btn-sm btn-ghost" data-paid="${o.id}">Mark paid (demo)</button>`}</td>
+        ? `<button class="btn btn-sm btn-brass" data-stk="${live?o.ref:o.id}">Send STK push</button>`
+        : (live ? '<span style="color:var(--muted);font-size:12px;">Awaiting real IPN</span>' : `<button class="btn btn-sm btn-ghost" data-paid="${o.id}">Mark paid (demo)</button>`)}</td>
     </tr>`).join('');
   document.getElementById('noAction').style.display = actionable.length ? 'none' : 'block';
 
-  document.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { Orders.sendSTKPush(b.dataset.stk); refresh(); });
+  document.querySelectorAll('[data-stk]').forEach(b => b.onclick = async () => {
+    try { live ? await JemanAPI.sendSTKPush(b.dataset.stk) : Orders.sendSTKPush(b.dataset.stk); }
+    catch (e) { alert(e.message); }
+    refresh();
+  });
   document.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => { Orders.simulateIPNSuccess(b.dataset.paid); refresh(); });
 }
 refresh();

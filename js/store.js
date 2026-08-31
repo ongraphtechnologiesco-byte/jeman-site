@@ -292,5 +292,69 @@ const Orders = {
 /* ---------- run housekeeping on load ---------- */
 Orders.releaseExpired();
 
+/* ============================================================
+   BACKEND API CLIENT
+   ------------------------------------------------------------
+   When js/config.js sets window.JEMAN_API_BASE_URL, these calls
+   hit the real server/ (real KCB Buni STK push + IPN). When it's
+   left empty, callers fall back to the local Orders simulation
+   above — so the same pages work in pure demo mode or fully wired.
+   ============================================================ */
+const JemanAPI = {
+  base() { return window.JEMAN_API_BASE_URL || ""; },
+  live() { return !!this.base(); },
+  adminToken() { return sessionStorage.getItem('jeman_admin_token'); },
+
+  async adminLogin(password) {
+    const r = await fetch(this.base() + '/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password })
+    });
+    const data = await r.json();
+    if (r.ok) sessionStorage.setItem('jeman_admin_token', data.token);
+    return { ok: r.ok, ...data };
+  },
+  async adminLogout() {
+    await fetch(this.base() + '/api/admin/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + this.adminToken() } }).catch(() => {});
+    sessionStorage.removeItem('jeman_admin_token');
+  },
+
+  async createOrder({ items, address, phone, subtotal, discount }) {
+    const r = await fetch(this.base() + '/api/orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, address, phone, subtotal, discount })
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'Could not create order');
+    return r.json();
+  },
+  async sendSTKPush(ref) {
+    const r = await fetch(this.base() + `/api/orders/${ref}/stkpush`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + this.adminToken() }
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'STK push failed');
+    return data;
+  },
+  async getOrder(ref, phone) {
+    const url = this.base() + `/api/orders/${ref}` + (phone ? `?phone=${encodeURIComponent(phone)}` : '');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error((await r.json()).error || 'Order not found');
+    return r.json();
+  },
+  async listOrders() {
+    const r = await fetch(this.base() + '/api/orders', { headers: { Authorization: 'Bearer ' + this.adminToken() } });
+    if (!r.ok) throw new Error((await r.json()).error || 'Could not load orders');
+    return r.json();
+  },
+  async sendMessage(ref, from, text) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (from === 'admin') headers.Authorization = 'Bearer ' + this.adminToken();
+    const r = await fetch(this.base() + `/api/orders/${ref}/message`, { method: 'POST', headers, body: JSON.stringify({ from, text }) });
+    if (!r.ok) throw new Error((await r.json()).error || 'Could not send message');
+    return r.json();
+  }
+};
+
 /* expose globally */
 window.JemanStore = { Products, Auth, Cart, Orders, Vouchers, money, uid };
+window.JemanAPI = JemanAPI;
+

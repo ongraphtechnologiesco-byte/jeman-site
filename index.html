@@ -1154,6 +1154,8 @@ footer a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
 
 <div class="toast" id="toast"></div>
 
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════
    DATA
@@ -1707,7 +1709,7 @@ document.getElementById('grid').addEventListener('click',e=>{
 function addToBag(p,size,col){
   const key=p.id+'|'+size+'|'+col[0];
   const f=bag.find(l=>l.key===key);
-  if(f) f.q++; else bag.push({key,n:p.n,size,col:col[0],hex:col[1],p:p.p,q:1});
+  if(f) f.q++; else bag.push({key,pid:p.id,n:p.n,size,col:col[0],hex:col[1],p:p.p,q:1});
   syncBag(); toast(p.n+' · size '+size+' added');
 }
 
@@ -2096,6 +2098,12 @@ document.getElementById('dBody').addEventListener('click',e=>{
 function stk(total,pts){
   const f=document.getElementById('dFoot');
   const phone=(document.getElementById('msisdn')||{}).value||'0722 000 000';
+
+  if (window.JemanAPI && window.JemanAPI.live()) {
+    liveCheckout(total, pts, phone, f);
+    return;
+  }
+
   const order='JC-'+new Date().toISOString().slice(2,10).replace(/-/g,'')+'-'+
     String(Math.floor(Math.random()*9000)+1000);
   let t=30;
@@ -2108,11 +2116,64 @@ function stk(total,pts){
   const cd=document.getElementById('cd');
   const iv=setInterval(()=>{t--;if(cd)cd.textContent=t;
     if(t<=0){clearInterval(iv);paid(total,pts,order,phone);}},1000);
-  /* real build also polls stkpushquery at 10s / 25s / 45s / 75s */
+  /* demo-only countdown. In live mode (JEMAN_API_BASE_URL set) this whole
+     branch is skipped in favour of liveCheckout(), which calls the real
+     KCB Buni STK push and waits for the actual IPN result. */
   setTimeout(()=>{clearInterval(iv);paid(total,pts,order,phone);},6500);
 }
-function paid(total,pts,order,phone){
-  const r='T'+Math.random().toString(36).slice(2,10).toUpperCase();
+
+async function liveCheckout(total, pts, phone, f) {
+  f.innerHTML = `<div class="st"><div class="pulse" id="cd">…</div>
+    <h4>Sending payment request</h4>
+    <p>Creating your order…</p></div>`;
+  try {
+    const items = bag.map(l => ({ productId: l.pid, size: l.size, qty: l.q, price: l.p }));
+    const subtotal = bag.reduce((a,l)=>a+l.p*l.q,0);
+    const order = await JemanAPI.createOrder({ items, phone, subtotal, discount: 0 });
+
+    f.innerHTML = `<div class="st"><div class="pulse" id="cd">•</div>
+      <h4>Order placed — ${order.ref}</h4>
+      <p>We'll send the M-Pesa prompt to ${phone} shortly. You can also track this order any time using the reference above and your phone number.</p></div>`;
+
+    // In "admin sends STK" mode this is where the flow pauses — the admin
+    // triggers JemanAPI.sendSTKPush(order.ref) from the dashboard. We also
+    // offer an immediate self-checkout trigger here since the customer is
+    // already on this screen and waiting.
+    f.innerHTML += `<button class="btn btn-brass" id="liveSend" style="margin-top:14px;width:100%;">Send payment prompt now</button>`;
+    document.getElementById('liveSend').onclick = async () => {
+      f.innerHTML = `<div class="st"><div class="pulse" id="cd">…</div><h4>Check your phone</h4><p>Enter your M-Pesa PIN to approve ${KES(total)}.</p></div>`;
+      try {
+        await JemanAPI.sendSTKPush(order.ref);
+        pollForPayment(order.ref, phone, total, pts, f);
+      } catch (e) {
+        f.innerHTML = `<div class="st"><h4>Could not send the prompt</h4><p>${e.message}. This usually means the admin needs to trigger it, or KCB credentials aren't set yet.</p></div>`;
+      }
+    };
+  } catch (e) {
+    f.innerHTML = `<div class="st"><h4>Something went wrong</h4><p>${e.message}</p></div>`;
+  }
+}
+
+function pollForPayment(ref, phone, total, pts, f) {
+  const started = Date.now();
+  const iv = setInterval(async () => {
+    try {
+      const order = await JemanAPI.getOrder(ref, phone);
+      if (order.status === 'paid') {
+        clearInterval(iv);
+        paid(total, pts, ref, phone, order.mpesaReceipt);
+      } else if (order.status === 'cancelled') {
+        clearInterval(iv);
+        f.innerHTML = `<div class="st"><h4>Payment not completed</h4><p>The request timed out or was declined. You can try again from your bag.</p></div>`;
+      } else if (Date.now() - started > 90000) {
+        clearInterval(iv);
+        f.innerHTML = `<div class="st"><h4>Still waiting</h4><p>Track this order any time with reference <b>${ref}</b> on the "Track an order" page.</p></div>`;
+      }
+    } catch (e) { /* keep polling */ }
+  }, 4000);
+}
+function paid(total,pts,order,phone,realReceipt){
+  const r=realReceipt||('T'+Math.random().toString(36).slice(2,10).toUpperCase());
   document.getElementById('dTitle').textContent='Paid';
   document.getElementById('dBody').innerHTML=`<div class="st"><div class="tick">✓</div>
     <h4>Payment received</h4>

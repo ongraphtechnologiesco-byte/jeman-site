@@ -30,11 +30,15 @@ const {
   KCB_BASE_URL,
   CALLBACK_BASE_URL,
   PORT,
-  ALLOWED_ORIGINS
+  ALLOWED_ORIGINS,
+  ADMIN_PASSWORD
 } = process.env;
 
 if (!KCB_CONSUMER_KEY || !KCB_CONSUMER_SECRET || !KCB_ORG_SHORTCODE) {
   console.warn('⚠️  KCB credentials are not fully set in .env — STK push calls will fail until they are.');
+}
+if (!ADMIN_PASSWORD) {
+  console.warn('⚠️  ADMIN_PASSWORD is not set in .env — admin login will reject everyone until it is.');
 }
 
 const app = express();
@@ -80,9 +84,59 @@ function normalizePhone(raw) {
   return digits;
 }
 
-/* ============================================================
-   POST /api/orders — create a pending order
-   ============================================================ */
+/* ---------- reservation expiry — computed lazily on read ---------- */
+const RESERVATION_HOURS = 24;
+const WARNING_WINDOW_HOURS = 6;
+
+function withComputedFields(order) {
+  const hoursRemaining = (new Date(order.reserveUntil).getTime() - Date.now()) / 3600000;
+  return {
+    ...order,
+    hoursRemaining: Math.round(hoursRemaining * 10) / 10,
+    expiringSoon: order.status === 'pending' && hoursRemaining > 0 && hoursRemaining <= WARNING_WINDOW_HOURS
+  };
+}
+
+function releaseExpired() {
+  const orders = readOrders();
+  let changed = false;
+  orders.forEach(o => {
+    if (o.status === 'pending' && new Date(o.reserveUntil).getTime() < Date.now()) {
+      o.status = 'cancelled';
+      o.history.push({ status: 'cancelled', at: new Date().toISOString(), reason: 'Reservation expired' });
+      changed = true;
+    }
+  });
+  if (changed) writeOrders(orders);
+}
+
+/* ---------- minimal admin auth ----------
+   MVP-level: an in-memory set of valid tokens, issued on correct password,
+   cleared on server restart. Good enough for a small single-admin store
+   while you're testing — swap for hashed passwords + persistent sessions
+   / real user accounts before this handles real stock and money at scale. */
+const adminTokens = new Set();
+function requireAdmin(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token || !adminTokens.has(token)) return res.status(401).json({ error: 'Not authenticated' });
+  next();
+}
+
+app.post('/api/admin/login', (req, res) => {
+  if (!ADMIN_PASSWORD || req.body?.password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Incorrect password' });
+  }
+  const token = require('crypto').randomBytes(24).toString('hex');
+  adminTokens.add(token);
+  res.json({ ok: true, token });
+});
+app.post('/api/admin/logout', requireAdmin, (req, res) => {
+  adminTokens.delete(req.headers.authorization.slice(7));
+  res.json({ ok: true });
+});
+
+
 app.post('/api/orders', (req, res) => {
   const { items, address, phone, subtotal, discount = 0 } = req.body;
   if (!items || !items.length || !phone) {
@@ -100,6 +154,7 @@ app.post('/api/orders', (req, res) => {
     merchantRequestId: null,
     checkoutRequestId: null,
     mpesaReceipt: null,
+    messages: [],
     history: [{ status: 'pending', at: new Date().toISOString() }]
   };
   orders.push(order);
@@ -110,7 +165,7 @@ app.post('/api/orders', (req, res) => {
 /* ============================================================
    POST /api/orders/:ref/stkpush — admin sends the payment prompt
    ============================================================ */
-app.post('/api/orders/:ref/stkpush', async (req, res) => {
+app.post('/api/orders/:ref/stkpush', requireAdmin, async (req, res) => {
   const orders = readOrders();
   const order = orders.find(o => o.ref === req.params.ref);
   if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -185,17 +240,43 @@ app.post('/api/mpesa/callback', (req, res) => {
 });
 
 /* ============================================================
+   Order messages — simple async admin↔customer thread per order
+   ============================================================ */
+app.post('/api/orders/:ref/message', (req, res) => {
+  const { from, text } = req.body; // from: 'admin' | 'customer'
+  if (!text || !['admin', 'customer'].includes(from)) {
+    return res.status(400).json({ error: 'from must be "admin" or "customer", and text is required' });
+  }
+  if (from === 'admin') {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token || !adminTokens.has(token)) return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const orders = readOrders();
+  const order = orders.find(o => o.ref === req.params.ref);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  order.messages = order.messages || [];
+  order.messages.push({ from, text, at: new Date().toISOString() });
+  writeOrders(orders);
+  res.json(withComputedFields(order));
+});
+
+/* ============================================================
    Read endpoints
    ============================================================ */
-app.get('/api/orders', (req, res) => res.json(readOrders()));
+app.get('/api/orders', requireAdmin, (req, res) => {
+  releaseExpired();
+  res.json(readOrders().map(withComputedFields));
+});
 
 app.get('/api/orders/:ref', (req, res) => {
+  releaseExpired();
   const order = readOrders().find(o => o.ref === req.params.ref);
   if (!order) return res.status(404).json({ error: 'Not found' });
   if (req.query.phone && normalizePhone(req.query.phone) !== normalizePhone(order.phone)) {
     return res.status(403).json({ error: 'Phone number does not match this order' });
   }
-  res.json(order);
+  res.json(withComputedFields(order));
 });
 
 app.listen(PORT || 4000, () => {
