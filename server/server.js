@@ -49,6 +49,7 @@ app.use(cors({
 
 /* ---------- tiny file-backed order store ---------- */
 const DB_PATH = path.join(__dirname, 'data', 'orders.json');
+if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 function readOrders() {
   try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); } catch (e) { return []; }
 }
