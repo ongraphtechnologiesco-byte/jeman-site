@@ -46,9 +46,12 @@ app.use(express.json());
 app.use(cors({
   origin: (ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
 }));
+app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
 
 /* ---------- tiny file-backed order store ---------- */
 const DB_PATH = path.join(__dirname, 'data', 'orders.json');
+ if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 function readOrders() {
   try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); } catch (e) { return []; }
 }
