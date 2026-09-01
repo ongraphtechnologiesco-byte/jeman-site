@@ -10,4 +10,4 @@
    tracking all switch to talking to the real backend — no other
    code changes needed.
    ============================================================ */
-window.JEMAN_API_BASE_URL = "";
+window.JEMAN_API_BASE_URL = "https://jeman-payments.onrender.com";, commit.
