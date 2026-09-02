@@ -52,10 +52,10 @@
 <script src="../js/store.js"></script>
 <script src="guard.js"></script>
 <script>
-const { Orders, Products, money } = JemanStore;
+const { Orders: LocalOrders, Products, money } = JemanStore;
 const live = window.JemanAPI && JemanAPI.live();
 
-async function fetchOrders() { return live ? JemanAPI.listOrders() : Orders.all(); }
+async function fetchOrders() { return live ? JemanAPI.listOrders() : LocalOrders.all(); }
 
 async function refresh(){
   const orders = await fetchOrders();
@@ -84,11 +84,11 @@ async function refresh(){
   document.getElementById('noAction').style.display = actionable.length ? 'none' : 'block';
 
   document.querySelectorAll('[data-stk]').forEach(b => b.onclick = async () => {
-    try { live ? await JemanAPI.sendSTKPush(b.dataset.stk) : Orders.sendSTKPush(b.dataset.stk); }
+    try { live ? await JemanAPI.sendSTKPush(b.dataset.stk) : LocalOrders.sendSTKPush(b.dataset.stk); }
     catch (e) { alert(e.message); }
     refresh();
   });
-  document.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => { Orders.simulateIPNSuccess(b.dataset.paid); refresh(); });
+  document.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => { LocalOrders.simulateIPNSuccess(b.dataset.paid); refresh(); });
 }
 refresh();
 </script>
