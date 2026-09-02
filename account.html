@@ -95,7 +95,7 @@
 <script src="js/config.js"></script>
 <script src="js/store.js"></script>
 <script>
-const { Auth, Orders, Vouchers, money } = JemanStore;
+const { Auth, Orders: LocalOrders, Vouchers, money } = JemanStore;
 
 function renderAuthOrDash(){
   const u = Auth.currentUser();
@@ -163,7 +163,7 @@ function renderDash(u){
       <span class="status status-${v.status==='active'?'paid':'cancelled'}">${v.status}</span>
     </div>`).join('') : '<p style="color:var(--muted);font-size:14px;">No vouchers yet — buy one for someone under "Send a gift voucher."</p>';
 
-  const orders = Orders.forUser(u.id);
+  const orders = LocalOrders.forUser(u.id);
   document.getElementById('paneOrders').innerHTML = orders.length ? orders.map(o => `
     <div class="order-row">
       <div><b>${o.ref}</b><div style="font-size:12px;color:var(--muted);">${new Date(o.createdAt).toLocaleDateString()} · ${o.items.length} item(s) · ${money(o.total)}</div></div>
