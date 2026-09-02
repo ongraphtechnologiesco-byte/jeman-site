@@ -34,7 +34,7 @@
 <script src="js/config.js"></script>
 <script src="js/store.js"></script>
 <script>
-const { Orders, money } = JemanStore;
+const { Orders: LocalOrders, money } = JemanStore;
 const STAGES = ['pending','payment_sent','paid','processing','shipped','delivered'];
 const LABELS = { pending:'Order placed', payment_sent:'Payment sent', paid:'Paid', processing:'Processing', shipped:'Shipped', delivered:'Delivered', cancelled:'Cancelled' };
 let currentRef = null, currentPhone = null;
@@ -51,7 +51,7 @@ document.getElementById('trackForm').onsubmit = async e => {
     if (window.JemanAPI && JemanAPI.live()) {
       order = await JemanAPI.getOrder(ref, phone);
     } else {
-      order = Orders.all().find(o => o.ref.toUpperCase() === ref && o.phone === phone);
+      order = LocalOrders.all().find(o => o.ref.toUpperCase() === ref && o.phone === phone);
     }
   } catch (e) { /* falls through to not-found below */ }
 
