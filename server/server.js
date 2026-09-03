@@ -190,7 +190,7 @@ app.post('/api/orders/:ref/stkpush', requireAdmin, async (req, res) => {
     const resp = await axios.post(
       `${KCB_BASE_URL}/mm/api/request/1.0.0/stkpush`,
       payload,
-      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+     { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', routeCode: '207', operation: 'STKPush', messageId: `${Date.now()}_${order.ref}` } }
     );
 
     const body = resp.data.response || {};
