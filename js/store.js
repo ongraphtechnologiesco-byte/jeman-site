@@ -1,4 +1,5 @@
-/* ============================================================
+(function () {
+   /* ============================================================
    JEMAN — shared store / mock backend
    -----------------------------------------------------------
    Everything here runs on localStorage so the whole site is
@@ -357,4 +358,5 @@ const JemanAPI = {
 /* expose globally */
 window.JemanStore = { Products, Auth, Cart, Orders, Vouchers, money, uid };
 window.JemanAPI = JemanAPI;
+    })();
 
