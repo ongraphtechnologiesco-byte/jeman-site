@@ -138,17 +138,24 @@ svg.ic{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;
   letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--rule-lo)}
 
 /* ── hero ── */
-.hero{background:var(--indigo);color:#fff;position:relative}
-.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(1.5rem,4vw,4rem);
-  align-items:center;padding-block:clamp(2.4rem,5vw,4.4rem)}
-@media (max-width:920px){.hero .wrap{grid-template-columns:1fr}}
-.hero h1{color:#fff;font-size:clamp(2.3rem,1.5rem + 3.6vw,4.3rem)}
+.hero{background:var(--indigo) center/cover no-repeat;
+  /* Drop a real photo at images/hero-model.jpg and it replaces this automatically.
+     Until then, a subtle dark pattern fills in so the section still looks intentional. */
+  background-image:
+    linear-gradient(180deg,rgba(15,23,49,.72),rgba(15,23,49,.86)),
+    url('images/hero-model.jpg'),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 18px);
+  color:#fff;position:relative}
+.hero .wrap{display:flex;flex-direction:column;align-items:center;text-align:center;
+  max-width:460px;padding-block:clamp(1.8rem,4vw,2.8rem)}
+.hero h1{color:#fff;font-size:clamp(2rem,1.5rem + 2.4vw,3.4rem)}
 .hero h1 em{font-style:italic;color:var(--brass-lo)}
 .hero .eyeb{font-family:var(--mono);font-size:.5875rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--brass-lo);margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
+  display:inline-flex;align-items:center;gap:.5rem;color:#C9D2E4;margin-bottom:.9rem;
+  justify-content:center}
 .hero .eyeb::before{content:"";width:24px;height:1px;background:var(--brass)}
-.hero p.l{color:#C9D2E4;max-width:44ch;margin:1.2rem 0 1.7rem}
-.hero .cta{display:flex;gap:.6rem;flex-wrap:wrap}
+.hero p.l{color:#C9D2E4;max-width:38ch;margin:1.1rem auto 1.5rem}
+.hero .cta{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
 
 /* the differentiator, in the hero */
 .finderbox{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);
@@ -334,6 +341,25 @@ svg.ic{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;
 /* ── footer ── */
 footer{background:var(--indigo);color:#C9D2E4;padding-block:clamp(2.6rem,5vw,4rem) 0}
 footer .cols{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.3fr;gap:2rem}
+footer .cols5{grid-template-columns:1.4fr .8fr .8fr .9fr 1.2fr}
+@media (max-width:1100px){footer .cols5{grid-template-columns:1fr 1fr 1fr}}
+@media (max-width:940px){footer .cols5{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){footer .cols5{grid-template-columns:1fr}}
+
+/* contact rows + social handles, adapted for the dark footer */
+.fcontact .vline{display:flex;align-items:center;gap:.55rem;padding:.5rem 0;
+  border-bottom:1px solid rgba(255,255,255,.1);font-size:.8125rem}
+.fcontact .vline:last-of-type{border-bottom:0}
+.fcontact .vline svg{flex:none;color:var(--brass-lo)}
+.fcontact .vline a{color:#C9D2E4}
+.fcontact .vline a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.fcontact .vline span.t{display:none}
+footer .sgrid{display:grid;grid-template-columns:1fr;gap:.5rem}
+footer .sgrid a{display:flex;align-items:center;gap:.5rem;padding:.55rem .6rem;border-radius:2px;
+  background:rgba(255,255,255,.05);color:#C9D2E4;font-size:.75rem}
+footer .sgrid a:hover{background:rgba(255,255,255,.1);color:#fff}
+footer .sgrid a b{display:block;font-size:.5625rem;letter-spacing:.1em;text-transform:uppercase;
+  color:#8FA0C2;font-weight:500}
 @media (max-width:940px){footer .cols{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){footer .cols{grid-template-columns:1fr}}
 footer h4{font-family:var(--mono);font-size:.5625rem;letter-spacing:.19em;text-transform:uppercase;
@@ -726,55 +752,20 @@ footer a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
 <!-- ══ hero ══ -->
 <section class="hero" id="top">
   <div class="wrap">
-    <div>
-      <p class="eyeb">Men’s wear · Classy · Timeless</p>
-      <h1>Stop guessing<br>your <em>size</em>.</h1>
-      <p class="l">Every garment on this site is listed with its real measurements in
-        centimetres. Tell us one number and we will tell you which size to take — and only
-        show you what we actually have in it.</p>
-      <div class="cta">
-        <a class="btn btn-brass" href="#shop">Shop the rail</a>
-        <a class="btn btn-ghost" href="#fitguide">How to measure</a>
-      </div>
-    </div>
-
-    <div class="finderbox">
-      <h4>Fit Finder</h4>
-      <p>Measure a shirt and a trouser you already own — flat, in centimetres. One number each
-        is enough.</p>
-      <div class="ff">
-        <div style="grid-column:1/-1"><label for="ffChest">Chest of a shirt you own, measured flat</label>
-          <input id="ffChest" inputmode="numeric" placeholder="56" maxlength="3"></div>
-        <input id="ffWaist" type="hidden">
-      </div>
-      <button class="btn btn-brass go" id="ffGo">Show what fits me</button>
-      <div class="out" id="ffOut"></div>
+    <p class="eyeb">Men’s wear · Classy · Timeless</p>
+    <h1>Stop guessing<br>your <em>size</em>.</h1>
+    <p class="l">Every garment on this site is listed with its real measurements in
+      centimetres. Tell us one number and we will tell you which size to take — and only
+      show you what we actually have in it.</p>
+    <div class="cta">
+      <a class="btn btn-brass" href="#shop">Shop the rail</a>
+      <a class="btn btn-ghost" href="#fitguide">How to measure</a>
     </div>
   </div>
 </section>
 
-<div class="trust">
-  <div class="wrap">
-    <div><b>Measured, not guessed</b><span>cm on every product</span></div>
-    <div><b>Same-day Nairobi</b><span>order before 14:00</span></div>
-    <div><b>Free exchange</b><span id="tReturn">7 days, tags on</span></div>
-    <div><b>Pay with M-Pesa</b><span id="tPaybill"></span></div>
-  </div>
-</div>
-
-<!-- ══ collection header ══ -->
-<div class="chead" id="shop">
-  <div class="wrap">
-    <p class="crumbs"><a href="#top">Home</a> · <span id="crumbCat">All menswear</span></p>
-    <h2 id="collTitle">All menswear</h2>
-    <p id="collDesc">Shirts and knitwear, photographed on the rail at Shop 22. Every piece is
-      listed with the garment measured flat, and stock is shared with the counter — what you
-      see is what is on the shelf.</p>
-  </div>
-</div>
-
 <!-- ══ toolbar ══ -->
-<div class="toolbar">
+<div class="toolbar" id="shop">
   <div class="wrap">
     <span class="count" id="count"></span>
     <button class="tbtn" id="filterBtn">Filter <u id="fCount" hidden>0</u></button>
@@ -902,89 +893,22 @@ footer a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
   </div>
 </section>
 
-<!-- ══ follow the fits ══ -->
-<section class="follow">
-  <div class="wrap">
-    <div class="hd">
-      <div>
-        <h2>Follow the fits</h2>
-        <p>New stock, fit videos and what came off the rail this week — posted before it
-          reaches the website.</p>
-      </div>
-      <div class="fsocials" id="followSocials"></div>
-    </div>
-    <div class="fgrid" id="followGrid"></div>
-  </div>
-</section>
-
-<!-- ══ contact / visit ══ -->
-<div class="tape"></div>
-<section class="visit" id="visit">
-  <div class="wrap">
-    <h2 style="font-size:clamp(1.7rem,1.3rem + 1.6vw,2.5rem)">Find us, call us, follow us</h2>
-    <p style="color:var(--muted);max-width:56ch;margin-top:.7rem">The whole rail is in one room
-      on the ground floor. Come and try things on, or message us and we will hold a size for
-      you until closing.</p>
-
-    <div class="vgrid">
-
-      <div class="vcard">
-        <div class="k">Visit the shop</div>
-        <h3 id="vName">Jeman Collections</h3>
-        <address id="vAddr" style="margin-top:.6rem"></address>
-        <div style="margin-top:auto;padding-top:1.1rem">
-          <div class="k" style="margin-bottom:.5rem">Opening hours</div>
-          <div id="vHours" style="font-family:var(--mono);font-size:.8125rem;color:var(--muted);
-            line-height:2"></div>
-        </div>
-      </div>
-
-      <div class="vcard">
-        <div class="k">Talk to us</div>
-        <h3>However you prefer</h3>
-        <div style="margin-top:.8rem" id="vContact"></div>
-        <p style="font-family:var(--mono);font-size:.625rem;color:var(--muted);line-height:1.9;
-          margin:1rem 0 0;border-top:1px solid var(--rule-lo);padding-top:.9rem">
-          WhatsApp is answered fastest during shop hours. Include your order number if you have
-          one — it saves a round trip.</p>
-      </div>
-
-      <div class="vcard">
-        <div class="k">Follow</div>
-        <h3>New stock lands here first</h3>
-        <div class="sgrid" id="vSocials" style="margin-top:.9rem"></div>
-        <p style="font-family:var(--mono);font-size:.625rem;color:var(--muted);line-height:1.9;
-          margin:1rem 0 0">Fit videos and new arrivals go up before they reach the website.</p>
-      </div>
-
-      <div class="maptile">
-        <div class="road"></div>
-        <div class="roadlbl">Ring Road Westlands</div>
-        <div class="pin"><b id="mapName">Jeman Collections</b>
-          <span id="mapAddr">Shop 22 · Ground floor</span></div>
-      </div>
-
-    </div>
-
-    <div class="editnote">
-      <span>These details are placeholders — set your real handles, phone and address here.</span>
-      <button class="btn btn-line" id="openSettings2" style="padding:.6rem 1rem">Edit store details</button>
-    </div>
-  </div>
-</section>
-
 <!-- ══ footer ══ -->
 <footer>
   <div class="wrap">
-    <div class="cols">
+
+    <div class="cols cols5">
       <div>
         <div style="margin-bottom:1.1rem">
           <span class="logomount" data-logo="full" data-h="132"></span>
         </div>
         <p style="max-width:34ch;color:#A9B6D0">Men’s wear, classy and timeless — with the measurements
           printed on the page. Made and sold in Nairobi.</p>
-        <p id="fAddr" style="font-family:var(--mono);font-size:.6875rem;color:#8FA0C2;
-          line-height:2;margin-top:1rem"></p>
+        <h3 id="vName" style="font-size:.9375rem;color:#fff;margin-top:1.1rem"></h3>
+        <address id="vAddr" style="font-style:normal;font-size:.8125rem;color:#A9B6D0;
+          line-height:1.8;margin-top:.3rem"></address>
+        <div id="vHours" style="font-family:var(--mono);font-size:.6875rem;color:#8FA0C2;
+          line-height:1.9;margin-top:.7rem"></div>
       </div>
       <div>
         <h4>Shop</h4>
@@ -1006,11 +930,15 @@ footer a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
           <li><a href="#">Delivery &amp; pickup stations</a></li>
           <li><a href="#">Exchanges &amp; returns</a></li>
           <li><a href="#">I paid but my order is pending</a></li>
-          <li><a href="#">Track your order</a></li>
+          <li><a href="track-order.html">Track your order</a></li>
           <li><a href="account.html#points">Points &amp; vouchers</a></li>
           <li><a href="#">Gift cards</a></li>
           <li><a href="#">Contact us</a></li>
         </ul>
+      </div>
+      <div>
+        <h4>Talk to us</h4>
+        <div id="vContact" class="fcontact"></div>
       </div>
       <div class="news">
         <h4>New arrivals first</h4>
@@ -1018,7 +946,7 @@ footer a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
           noise, and you can stop it with one word.</p>
         <input type="tel" placeholder="07XX XXX XXX" aria-label="Phone number">
         <button class="btn btn-brass" id="subBtn">Notify me</button>
-        <div class="socials" id="fSocials"></div>
+        <div class="socials sgrid" id="vSocials" style="margin-top:1.1rem"></div>
       </div>
     </div>
     <div class="fbot">
@@ -1602,9 +1530,9 @@ function render(){
   document.getElementById('count').innerHTML=
     `<b>${list.length}</b> ${list.length===1?'piece':'pieces'}`+
     (S.chest||S.waist?' that fit you':'');
-  document.getElementById('collTitle').textContent=CATS[S.cat]||'All menswear';
-  document.getElementById('crumbCat').textContent=(CATS[S.cat]||'All menswear')+(S.sub?' · '+S.sub:'');
-  document.getElementById('collDesc').textContent=DESC[S.cat]||DESC.all;
+  const collTitleEl=document.getElementById('collTitle'); if(collTitleEl) collTitleEl.textContent=CATS[S.cat]||'All menswear';
+  const crumbCatEl=document.getElementById('crumbCat'); if(crumbCatEl) crumbCatEl.textContent=(CATS[S.cat]||'All menswear')+(S.sub?' · '+S.sub:'');
+  const collDescEl=document.getElementById('collDesc'); if(collDescEl) collDescEl.textContent=DESC[S.cat]||DESC.all;
 
   const nf=S.subs.size+S.sizes.size+S.fits.size+S.fabrics.size+S.colours.size+
     (S.inStock?1:0)+(S.atShop?1:0)+(S.pMin||S.pMax?1:0)+(S.chest?1:0)+(S.waist?1:0);
@@ -1723,8 +1651,8 @@ document.getElementById('activePills').addEventListener('click',e=>{
   const b=e.target.closest('[data-pill]'); if(!b) return;
   const k=b.dataset.pill;
   if(k==='sub') S.sub=null;
-  else if(k==='chest'){S.chest=null;document.getElementById('fChest').value='';document.getElementById('ffChest').value='';}
-  else if(k==='waist'){S.waist=null;document.getElementById('fWaist').value='';document.getElementById('ffWaist').value='';}
+  else if(k==='chest'){S.chest=null;document.getElementById('fChest').value='';const fc=document.getElementById('ffChest');if(fc)fc.value='';}
+  else if(k==='waist'){S.waist=null;document.getElementById('fWaist').value='';const fw=document.getElementById('ffWaist');if(fw)fw.value='';}
   else if(k==='inStock'){S.inStock=false;document.getElementById('inStock').checked=false;}
   else if(k==='atShop'){S.atShop=false;document.getElementById('atShop').checked=false;}
   else if(k==='price'){S.pMin=S.pMax=null;document.getElementById('pMin').value='';
@@ -1759,8 +1687,8 @@ function setFit(chest,waist){
   S.chest=chest||null; S.waist=waist||null; S.page=1;
   document.getElementById('fChest').value=chest||'';
   document.getElementById('fWaist').value=waist||'';
-  document.getElementById('ffChest').value=chest||'';
-  document.getElementById('ffWaist').value=waist||'';
+  const ffc=document.getElementById('ffChest'); if(ffc) ffc.value=chest||'';
+  const ffw=document.getElementById('ffWaist'); if(ffw) ffw.value=waist||'';
   const out=document.getElementById('ffOut');
   if(chest||waist){
     const bits=[];
@@ -1768,12 +1696,13 @@ function setFit(chest,waist){
       bits.push(`Shirts &amp; knitwear — take <b>${TOP_SIZES[i]}</b>`);}
     if(waist){let i=BOT_WAIST.findIndex(w=>w>=waist); if(i<0)i=4;
       bits.push(`Chinos — take waist <b>${BOT_SIZES[i]}</b>`);}
-    out.innerHTML=bits.join('<br>')+'<br>Showing only what is in stock in your size.';
-    out.classList.add('on');
-  } else out.classList.remove('on');
+    if(out){out.innerHTML=bits.join('<br>')+'<br>Showing only what is in stock in your size.';
+      out.classList.add('on');}
+  } else if(out) out.classList.remove('on');
   render();
 }
-document.getElementById('ffGo').onclick=()=>{
+const ffGoBtn=document.getElementById('ffGo');
+if(ffGoBtn) ffGoBtn.onclick=()=>{
   setFit(+document.getElementById('ffChest').value||null,
          +document.getElementById('ffWaist').value||null);
   document.getElementById('shop').scrollIntoView({behavior:'smooth'});
@@ -1789,8 +1718,10 @@ function clearAll(){
     colours:new Set(),inStock:false,atShop:false,pMin:null,pMax:null,
     chest:null,waist:null,sort:S.sort,page:1};
   document.querySelectorAll('#filters input[type=checkbox]').forEach(c=>c.checked=false);
-  ['pMin','pMax','fChest','fWaist','ffChest','ffWaist'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ffOut').classList.remove('on');
+  ['pMin','pMax','fChest','fWaist'].forEach(id=>document.getElementById(id).value='');
+  const ffc2=document.getElementById('ffChest'); if(ffc2) ffc2.value='';
+  const ffw2=document.getElementById('ffWaist'); if(ffw2) ffw2.value='';
+  const ffo2=document.getElementById('ffOut'); if(ffo2) ffo2.classList.remove('on');
   buildFilters(); render();
 }
 document.getElementById('clearAll').onclick=clearAll;
@@ -2044,7 +1975,7 @@ document.getElementById('resetCfg').onclick=()=>{
 };
 function openSettings(){open(settings);settings.setAttribute('aria-hidden','false');}
 document.getElementById('openSettings').onclick=openSettings;
-document.getElementById('openSettings2').onclick=openSettings;
+const os2=document.getElementById('openSettings2'); if(os2) os2.onclick=openSettings;
 document.getElementById('closeSettings').onclick=closeAll;
 
 /* ═══ toast ═══ */
@@ -2104,22 +2035,18 @@ function stk(total,pts){
     return;
   }
 
+  // Demo/offline fallback (no backend connected) — still admin-only payment,
+  // no self-checkout simulation. Just confirms the order was "placed" and
+  // stops there, matching what a customer would actually see live.
   const order='JC-'+new Date().toISOString().slice(2,10).replace(/-/g,'')+'-'+
     String(Math.floor(Math.random()*9000)+1000);
-  let t=30;
-  f.innerHTML=`<div class="st"><div class="pulse" id="cd">${t}</div>
-    <h4>Check your phone</h4>
-    <p>We sent a prompt to ${phone}. Enter your M-Pesa PIN to approve ${KES(total)}.</p>
-    <div class="fbk"><p class="nt">Prompt did not arrive? Pay manually:<br>
-      Paybill <b style="color:var(--ink)">${SITE.paybill}</b> ·
-      Account <b style="color:var(--ink)">${order}</b></p></div></div>`;
-  const cd=document.getElementById('cd');
-  const iv=setInterval(()=>{t--;if(cd)cd.textContent=t;
-    if(t<=0){clearInterval(iv);paid(total,pts,order,phone);}},1000);
-  /* demo-only countdown. In live mode (JEMAN_API_BASE_URL set) this whole
-     branch is skipped in favour of liveCheckout(), which calls the real
-     KCB Buni STK push and waits for the actual IPN result. */
-  setTimeout(()=>{clearInterval(iv);paid(total,pts,order,phone);},6500);
+  f.innerHTML=`<div class="st"><div class="pulse" id="cd">•</div>
+    <h4>Order placed — ${order}</h4>
+    <p>Save this reference — <b>${order}</b>. We'll text you at ${phone} when your payment
+    request is on its way, usually within a few minutes during shop hours.</p>
+    <div class="fbk"><p class="nt">This preview has no backend connected, so there's nothing
+      further to simulate here — on the live site, this is where the admin sends the payment
+      request from the dashboard.</p></div></div>`;
 }
 
 async function liveCheckout(total, pts, phone, f) {
@@ -2133,22 +2060,14 @@ async function liveCheckout(total, pts, phone, f) {
 
     f.innerHTML = `<div class="st"><div class="pulse" id="cd">•</div>
       <h4>Order placed — ${order.ref}</h4>
-      <p>We'll send the M-Pesa prompt to ${phone} shortly. You can also track this order any time using the reference above and your phone number.</p></div>`;
+      <p>Save this reference — <b>${order.ref}</b>. We'll text you at ${phone} when your payment
+      request is on its way, usually within a few minutes during shop hours. You can also track
+      this order any time using the reference above and your phone number.</p></div>`;
 
-    // In "admin sends STK" mode this is where the flow pauses — the admin
-    // triggers JemanAPI.sendSTKPush(order.ref) from the dashboard. We also
-    // offer an immediate self-checkout trigger here since the customer is
-    // already on this screen and waiting.
-    f.innerHTML += `<button class="btn btn-brass" id="liveSend" style="margin-top:14px;width:100%;">Send payment prompt now</button>`;
-    document.getElementById('liveSend').onclick = async () => {
-      f.innerHTML = `<div class="st"><div class="pulse" id="cd">…</div><h4>Check your phone</h4><p>Enter your M-Pesa PIN to approve ${KES(total)}.</p></div>`;
-      try {
-        await JemanAPI.sendSTKPush(order.ref);
-        pollForPayment(order.ref, phone, total, pts, f);
-      } catch (e) {
-        f.innerHTML = `<div class="st"><h4>Could not send the prompt</h4><p>${e.message}. This usually means the admin needs to trigger it, or KCB credentials aren't set yet.</p></div>`;
-      }
-    };
+    // Payment is admin-triggered only (Option B) — the customer never sends
+    // their own STK push. This just watches for the admin to do it and
+    // updates the screen automatically once payment is confirmed.
+    pollForPayment(order.ref, phone, total, pts, f);
   } catch (e) {
     f.innerHTML = `<div class="st"><h4>Something went wrong</h4><p>${e.message}</p></div>`;
   }
